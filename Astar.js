@@ -43,13 +43,6 @@ class Astar {
 		this.map.set(this._getKeyFromPoint(point), 2);
 	}
 
-	_drawRoad(node) {
-		while (node) {
-			console.log(node.key);
-			node = node.parent;
-		}
-	}
-
 	_f(node) {
 		return node.g + node.h;
 	}
@@ -68,55 +61,62 @@ class Astar {
 		open.push({key: this._getKeyFromPoint(this.startPoint), g: 0, h: this._pita(this.startPoint), parent: undefined});
 
 		let endPoitnFound = false;
+		let openIsEmpty = false;
 		let actual;
 		let sol;
 
 		do {
+			if (open.length > 0) {
 			actual = open.shift();
-			closed.add(actual.key);
-			for (var iX = -1; iX <= 1; iX++) {
-				for (var iY = -1; iY <= 1; iY++) {
-					const point = this._getPointFromKey(actual.key);
-					point.x += iX;
-					point.y += iY;
-					const key = this._getKeyFromPoint(point);
-					const g = iX == 0 || iY == 0 ? 1 : Math.sqrt(2);
+				closed.add(actual.key);
+				if (actual.key !== this._getKeyFromPoint(this.endPoint)) {
+					for (var iX = -1; iX <= 1; iX++) {
+						for (var iY = -1; iY <= 1; iY++) {
+							const point = this._getPointFromKey(actual.key);
+							point.x += iX;
+							point.y += iY;
+							const key = this._getKeyFromPoint(point);
+							const g = iX == 0 || iY == 0 ? 1 : Math.sqrt(2);
 
-					if (point.x >= 0 &&
-						point.x < this.maxX &&
-						point.y >= 0 &&
-						point.y < this.maxY &&
-						(!this.map.has(key) || this.map.get(key) !== 2)) {
+							if (point.x >= 0 &&
+								point.x < this.maxX &&
+								point.y >= 0 &&
+								point.y < this.maxY &&
+								(!this.map.has(key) || this.map.get(key) !== 2)) {
 
-						//Just make something if is not in the closed list
-						if (!closed.has(key)) {
-							const index = open.findIndex(n => n.key === key);
-							
-							if (index === -1) {
-								if (key !== this._getKeyFromPoint(this.endPoint)) {
-									open.push({key: key, g: actual.g + g, h: this._pita(point), parent: actual});
-								} else {
-									endPoitnFound = true;
-									sol = {key: key, g: actual.g + g, parent: actual};
+								//Just make something if is not in the closed list
+								if (!closed.has(key)) {
+									const index = open.findIndex(n => n.key === key);
+									
+									if (index === -1) {
+										open.push({key: key, g: actual.g + g, h: this._pita(point), parent: actual});
+										/*if (key !== this._getKeyFromPoint(this.endPoint)) {
+											open.push({key: key, g: actual.g + g, h: this._pita(point), parent: actual});
+										} else {
+											endPoitnFound = true;
+											sol = {key: key, g: actual.g + g, h: 0, parent: actual};
+										}*/
+									} else if (actual.g + g < open[index].g) {
+										open[index].g = actual.g + g;
+										open[index].parent = actual;
+									}
 								}
-								// In this version, not need update
-							} else {
-								// In this version, nothing
 							}
 						}
 					}
-				}
-			}
-			open = open.sort((a, b) => this._f(a) - this._f(b));
-		} while(!endPoitnFound);
+				} else endPoitnFound = true;
+				open = open.sort((a, b) => this._f(a) < this._f(b));
+			} else openIsEmpty = true;
+		} while(!endPoitnFound && !openIsEmpty);
 
-		
-		while (sol) {
-			if (!this.map.has(sol.key)) {
-				this.map.set(sol.key, 3);
+		while (endPoitnFound && actual) {
+			if (!this.map.has(actual.key)) {
+				this.map.set(actual.key, 3);
 			}
-			sol = sol.parent;
+			actual = actual.parent;
 		}
+
+		if (openIsEmpty) console.log('No existe solucion');
 	}
 
 	draw() {
@@ -163,47 +163,14 @@ class Astar {
 const a = new Astar(10, 10);
 
 a.setStartPoint(0, 0);
-a.setEndPoint(9, 9);
+a.setEndPoint(9, 7);
 
-a.setObstacle(1, 0);
-a.setObstacle(1, 1);
-a.setObstacle(1, 2);
-a.setObstacle(1, 3);
-a.setObstacle(1, 4);
-a.setObstacle(1, 5);
-a.setObstacle(1, 6);
-a.setObstacle(1, 7);
-a.setObstacle(1, 8);
+a.setObstacle(9, 6);
+a.setObstacle(9, 8);
+a.setObstacle(8, 6);
+a.setObstacle(8, 7);
+a.setObstacle(8, 8);
 
-a.setObstacle(3, 1);
-a.setObstacle(3, 2);
-a.setObstacle(3, 3);
-a.setObstacle(3, 4);
-a.setObstacle(3, 5);
-a.setObstacle(3, 6);
-a.setObstacle(3, 7);
-a.setObstacle(3, 8);
-a.setObstacle(3, 9);
-
-a.setObstacle(5, 0);
-a.setObstacle(5, 1);
-a.setObstacle(5, 2);
-a.setObstacle(5, 3);
-a.setObstacle(5, 4);
-a.setObstacle(5, 5);
-a.setObstacle(5, 6);
-a.setObstacle(5, 7);
-a.setObstacle(5, 8);
-
-a.setObstacle(7, 1);
-a.setObstacle(7, 2);
-a.setObstacle(7, 3);
-a.setObstacle(7, 4);
-a.setObstacle(7, 5);
-a.setObstacle(7, 6);
-a.setObstacle(7, 7);
-a.setObstacle(7, 8);
-a.setObstacle(7, 9);
-
+console.clear();
 a.calculate();
 a.draw();
