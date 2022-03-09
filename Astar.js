@@ -8,11 +8,10 @@ const RISKY = 4;
 const PATH = 5;
 
 class Astar {
-	constructor(maxX, maxY, distanceX, distanceY) {
+	constructor(maxX, maxY, distance) {
 		this.maxX = maxX;
 		this.maxY = maxY;
-		this.distanceX = distanceX;
-		this.distanceY = distanceY;
+		this.distance = distance;
 		this.map = new Map();
 		this.paths = [];
 		this.points = [];
@@ -76,8 +75,8 @@ class Astar {
 	}
 
 	_g(node) {
-		const a = (this.endPoint.x - node.x) * this.distanceX;
-		const b = (this.endPoint.y - node.y) * this.distanceY;
+		const a = (this.endPoint.x - node.x) * this.distance;
+		const b = (this.endPoint.y - node.y) * this.distance;
 
 		return Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
 	}
@@ -113,7 +112,7 @@ class Astar {
 				point.x += iX;
 				point.y += iY;
 				const key = this._getKeyFromPoint(point);
-				const g = iX === 0 || iY === 0 ? 1 : Math.sqrt(Math.pow(this.distanceX, 2) + Math.pow(this.distanceY, 2));
+				const g = iX === 0 || iY === 0 ? 1 : Math.sqrt(Math.pow(this.distance, 2) + Math.pow(this.distance, 2));
 
 				if (point.x >= 0 &&
 					point.x < this.maxX &&
@@ -159,15 +158,11 @@ class Astar {
 						expand(this._getPointFromKey(actual.key), 1, 0);
 						expand(this._getPointFromKey(actual.key), 1, 1);
 					} else endPoitnFound = true;
-					open = open.sort((a, b) => this._f(a) < this._f(b));
+					open = open.sort((a, b) => this._f(a) - this._f(b));
 				} else openIsEmpty = true;
 			} while (!endPoitnFound && !openIsEmpty);
-
 			const sol = [];
 
-			open.forEach(op => {
-				this.map.set(op.key, OBSTACLE);
-			});
 			while (endPoitnFound && actual) {
 				sol.push(actual);
 				// DEBUG ONLY -> SAVE PATH ON MAP
@@ -190,12 +185,25 @@ class Astar {
 	}
 }
 
-const a = new Astar(10, 10, 1, 1);
+const a = new Astar(10, 10, 1);
 
-a.addPoint(5, 2);
-a.addPoint(5, 7);
-//a.addPoint(9, 9);
-//a.addPoint(9, 0);
+a.addPoint(1, 0);
+a.addPoint(1, 9);
+
+a.setObstacle(3, 0);
+a.setObstacle(3, 1);
+a.setObstacle(3, 2);
+a.setObstacle(3, 3);
+a.setObstacle(3, 4);
+a.setObstacle(3, 5);
+a.setObstacle(3, 6);
+a.setObstacle(3, 7);
+a.setObstacle(3, 8);
+a.setObstacle(3, 9);
+
+a.setRiskyPoint(0, 5, 30);
+a.setRiskyPoint(1, 5, 100);
+a.setRiskyPoint(2, 5, 10);
 
 //a.setRiskyPoint(0, 5, 100);
 
