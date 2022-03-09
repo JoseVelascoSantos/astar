@@ -1,19 +1,45 @@
+'use strict'
+
+const START_POINT = 0;
+const END_POINT = 1;
+const OBSTACLE = 2;
+const INACCESSIBLE = 3;
+const RISKY = 4;
+const PATH = 5;
+
 class Astar {
-
-	/*
-
-	-If a coordinate not exists in map, is empty.
-	-Possible values:
-		+.0: start point.
-		+.1: end point.
-		+.2: obstacle.
-
-	*/
-
-	constructor(maxX, maxY) {
+	constructor(maxX, maxY, distanceX, distanceY) {
 		this.maxX = maxX;
 		this.maxY = maxY;
+		this.distanceX = distanceX;
+		this.distanceY = distanceY;
 		this.map = new Map();
+		this.paths = [];
+		this.points = [];
+		this.risks = new Map();
+	}
+
+	reset() {
+		this.map = new Map();
+		this.paths = [];
+		this.points = [];
+		this.risks = new Map();
+	}
+
+	getMaxX() {
+		return this.maxX;
+	}
+
+	setMaxX(maxX) {
+		this.maxX = maxX;
+	}
+
+	getMaxY() {
+		return this.maxY;
+	}
+
+	setMaxY(maxY) {
+		this.maxY = maxY;
 	}
 
 	_getKeyFromPoint(point) {
@@ -24,153 +50,200 @@ class Astar {
 		return {x: parseInt(key / this.maxX), y: key % this.maxX};
 	}
 
-	setStartPoint(x, y) {
+	addPoint(x, y) {
 		const point = {x: x, y: y};
-		this.map.set(this._getKeyFromPoint(point), 0);
-		this.startPoint = point;
+		this.points.push(point);
 	}
-
-
-	setEndPoint(x, y) {
-		const point = {x: x, y: y};
-		this.map.set(this._getKeyFromPoint(point), 1);
-		this.endPoint = point;
-	}
-
 
 	setObstacle(x, y) {
 		const point = {x: x, y: y};
-		this.map.set(this._getKeyFromPoint(point), 2);
+		this.map.set(this._getKeyFromPoint(point), OBSTACLE);
+	}
+
+	setInaccessible(x, y) {
+		const point = {x: x, y: y};
+		this.map.set(this._getKeyFromPoint(point), INACCESSIBLE);
+	}
+
+	setRiskyPoint(x, y, risk) {
+		const point = {x: x, y: y};
+		this.map.set(this._getKeyFromPoint(point), RISKY);
+		this.risks.set(this._getKeyFromPoint(point), risk);
 	}
 
 	_f(node) {
 		return node.g + node.h;
 	}
 
-	_pita(node) {
-		const a = this.endPoint.x - node.x;
-		const b = this.endPoint.y - node.y;
+	_g(node) {
+		const a = (this.endPoint.x - node.x) * this.distanceX;
+		const b = (this.endPoint.y - node.y) * this.distanceY;
 
 		return Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
 	}
 
 	calculate() {
-		const closed = new Set();
-		let open = new Array();
-
-		open.push({key: this._getKeyFromPoint(this.startPoint), g: 0, h: this._pita(this.startPoint), parent: undefined});
-
-		let endPoitnFound = false;
-		let openIsEmpty = false;
-		let actual;
-		let sol;
-
 		do {
-			if (open.length > 0) {
-			actual = open.shift();
-				closed.add(actual.key);
-				if (actual.key !== this._getKeyFromPoint(this.endPoint)) {
-					for (var iX = -1; iX <= 1; iX++) {
-						for (var iY = -1; iY <= 1; iY++) {
-							const point = this._getPointFromKey(actual.key);
-							point.x += iX;
-							point.y += iY;
-							const key = this._getKeyFromPoint(point);
-							const g = iX == 0 || iY == 0 ? 1 : Math.sqrt(2);
+			if (this.startPoint) {
+				this.map.delete(this._getKeyFromPoint(this.startPoint));
+				this.startPoint = this.endPoint;
+				this.map.set(this._getKeyFromPoint(this.startPoint), START_POINT);
+			} else {
+				this.startPoint = this.points.shift();
+				this.map.set(this._getKeyFromPoint(this.startPoint), START_POINT);
+			}
 
-							if (point.x >= 0 &&
-								point.x < this.maxX &&
-								point.y >= 0 &&
-								point.y < this.maxY &&
-								(!this.map.has(key) || this.map.get(key) !== 2)) {
+			this.endPoint = this.points.shift();
+			this.map.set(this._getKeyFromPoint(this.endPoint), END_POINT);
 
-								//Just make something if is not in the closed list
-								if (!closed.has(key)) {
-									const index = open.findIndex(n => n.key === key);
-									
-									if (index === -1) {
-										open.push({key: key, g: actual.g + g, h: this._pita(point), parent: actual});
-										/*if (key !== this._getKeyFromPoint(this.endPoint)) {
-											open.push({key: key, g: actual.g + g, h: this._pita(point), parent: actual});
-										} else {
-											endPoitnFound = true;
-											sol = {key: key, g: actual.g + g, h: 0, parent: actual};
-										}*/
-									} else if (actual.g + g < open[index].g) {
-										open[index].g = actual.g + g;
-										open[index].parent = actual;
-									}
-								}
+			const closed = new Set();
+			let open = [];
+
+			open.push({
+				key: this._getKeyFromPoint(this.startPoint),
+				g: 0,
+				h: this._g(this.startPoint),
+				parent: undefined
+			});
+
+			let endPoitnFound = false;
+			let openIsEmpty = false;
+			let actual;
+			const expand = (point, iX, iY) => {
+				point.x += iX;
+				point.y += iY;
+				const key = this._getKeyFromPoint(point);
+				const g = iX === 0 || iY === 0 ? 1 : Math.sqrt(Math.pow(this.distanceX, 2) + Math.pow(this.distanceY, 2));
+
+				if (point.x >= 0 &&
+					point.x < this.maxX &&
+					point.y >= 0 &&
+					point.y < this.maxY &&
+					(!this.map.has(key) || (this.map.get(key) !== OBSTACLE && this.map.get(key) !== INACCESSIBLE))) {
+
+					if (!closed.has(key)) {
+						const index = open.findIndex(n => n.key === key);
+
+						if (index === -1) {
+							const aux = {
+								key: key,
+								g: actual.g + g,
+								h: this._g(point),
+								parent: actual
+							};
+							aux.f = this._f(aux);
+
+							if (this.map.has(key) && this.map.get(key) === RISKY) {
+								aux.h += this.risks.get(key);
 							}
+							open.push(aux);
+						} else if (actual.g + g < open[index].g) {
+							open[index].g = actual.g + g;
+							open[index].parent = actual;
 						}
 					}
-				} else endPoitnFound = true;
-				open = open.sort((a, b) => this._f(a) < this._f(b));
-			} else openIsEmpty = true;
-		} while(!endPoitnFound && !openIsEmpty);
+				}
+			};
 
-		while (endPoitnFound && actual) {
-			if (!this.map.has(actual.key)) {
-				this.map.set(actual.key, 3);
+			do {
+				if (open.length > 0) {
+					actual = open.shift();
+					closed.add(actual.key);
+					if (actual.key !== this._getKeyFromPoint(this.endPoint)) {
+						expand(this._getPointFromKey(actual.key), -1, -1);
+						expand(this._getPointFromKey(actual.key), -1, 0);
+						expand(this._getPointFromKey(actual.key), -1, 1);
+						expand(this._getPointFromKey(actual.key), 0, -1);
+						expand(this._getPointFromKey(actual.key), 0, 1);
+						expand(this._getPointFromKey(actual.key), 1, -1);
+						expand(this._getPointFromKey(actual.key), 1, 0);
+						expand(this._getPointFromKey(actual.key), 1, 1);
+					} else endPoitnFound = true;
+					open = open.sort((a, b) => this._f(a) < this._f(b));
+				} else openIsEmpty = true;
+			} while (!endPoitnFound && !openIsEmpty);
+
+			const sol = [];
+
+			open.forEach(op => {
+				this.map.set(op.key, OBSTACLE);
+			});
+			while (endPoitnFound && actual) {
+				sol.push(actual);
+				// DEBUG ONLY -> SAVE PATH ON MAP
+				if (!this.map.has(actual.key)) {
+					this.map.set(actual.key, PATH);
+				}
+				actual = actual.parent;
 			}
-			actual = actual.parent;
-		}
 
-		if (openIsEmpty) console.log('No existe solucion');
+			this.paths.push(sol);
+		} while(this.points.length > 0);
 	}
 
-	draw() {
-		// ### DEBUG ONLY ###
-		console.log('Start point: ' + JSON.stringify(this.startPoint));
-		console.log('End point: ' + JSON.stringify(this.endPoint));
+	getInPoint(point) {
+		return this.map.get(this._getKeyFromPoint(point));
+	}
 
-		let line = ' |';
-		for (var y = 0; y < this.maxY; y++) {
-			line += ' ' + y + ' |';
-		}
-		console.log(line);
-		for (var x = 0; x < this.maxX; x++) {
-			line = x + '|';
-			for (var y = 0; y < this.maxY; y++) {
-				const key = this._getKeyFromPoint({x: x, y: y});
-				if (this.map.has(key)) {
-					switch (this.map.get(key)) {
-						case 0:
-							line += ' I |';
-							break;
-
-						case 1:
-							line += ' F |';
-							break;
-
-						case 2:
-							line += ' # |';
-							break;
-
-						case 3:
-							line += ' . |';
-							break;
-					}
-				} else {
-					line += '   |';
-				}
-			}
-			console.log(line);
-		}
+	getPaths() {
+		return this.paths;
 	}
 }
 
-const a = new Astar(10, 10);
+const a = new Astar(10, 10, 1, 1);
 
-a.setStartPoint(0, 0);
-a.setEndPoint(9, 7);
+a.addPoint(5, 2);
+a.addPoint(5, 7);
+//a.addPoint(9, 9);
+//a.addPoint(9, 0);
 
-a.setObstacle(9, 6);
-a.setObstacle(9, 8);
-a.setObstacle(8, 6);
-a.setObstacle(8, 7);
-a.setObstacle(8, 8);
+//a.setRiskyPoint(0, 5, 100);
 
-console.clear();
 a.calculate();
-a.draw();
+
+console.log(a.getPaths());
+
+
+// ### CONSOLE PRINT ###
+let line = ' |';
+let y;
+for (y = 0; y < a.getMaxY(); y++) {
+	line += ' ' + y + ' |';
+}
+console.log(line);
+for (let x = 0; x < a.getMaxX(); x++) {
+	line = x + '|';
+	for (y = 0; y < a.getMaxY(); y++) {
+		const point = a.getInPoint({x: x, y: y});
+		switch (point) {
+			case START_POINT:
+				line += ' I |';
+				break;
+
+			case END_POINT:
+				line += ' F |';
+				break;
+
+			case OBSTACLE:
+				line += ' # |';
+				break;
+
+			case INACCESSIBLE:
+				line += ' X |';
+				break;
+
+			case RISKY:
+				line += ' R |';
+				break;
+
+			case PATH:
+				line += ' . |';
+				break;
+
+			default:
+				line += '   |';
+				break;
+		}
+	}
+	console.log(line);
+}
