@@ -1,13 +1,12 @@
 'use strict'
 
-const START_POINT = 0;
-const END_POINT = 1;
-const OBSTACLE = 2;
-const INACCESSIBLE = 3;
-const RISKY = 4;
-const PATH = 5;
+exports.START_POINT = 0;
+exports.END_POINT = 1;
+exports.OBSTACLE = 2;
+exports.INACCESSIBLE = 3;
+exports.RISKY = 4;
 
-class Astar {
+exports.Astar = class Astar {
 	constructor(maxX, maxY, distance) {
 		this.maxX = maxX;
 		this.maxY = maxY;
@@ -46,7 +45,7 @@ class Astar {
 	}
 
 	_getPointFromKey(key) {
-		return {x: parseInt(key / this.maxX), y: key % this.maxX};
+		return {x: Math.floor(key / this.maxX), y: key % this.maxX};
 	}
 
 	addPoint(x, y) {
@@ -56,17 +55,17 @@ class Astar {
 
 	setObstacle(x, y) {
 		const point = {x: x, y: y};
-		this.map.set(this._getKeyFromPoint(point), OBSTACLE);
+		this.map.set(this._getKeyFromPoint(point), exports.OBSTACLE);
 	}
 
 	setInaccessible(x, y) {
 		const point = {x: x, y: y};
-		this.map.set(this._getKeyFromPoint(point), INACCESSIBLE);
+		this.map.set(this._getKeyFromPoint(point), exports.INACCESSIBLE);
 	}
 
 	setRiskyPoint(x, y, risk) {
 		const point = {x: x, y: y};
-		this.map.set(this._getKeyFromPoint(point), RISKY);
+		this.map.set(this._getKeyFromPoint(point), exports.RISKY);
 		this.risks.set(this._getKeyFromPoint(point), risk);
 	}
 
@@ -86,14 +85,14 @@ class Astar {
 			if (this.startPoint) {
 				this.map.delete(this._getKeyFromPoint(this.startPoint));
 				this.startPoint = this.endPoint;
-				this.map.set(this._getKeyFromPoint(this.startPoint), START_POINT);
+				this.map.set(this._getKeyFromPoint(this.startPoint), exports.START_POINT);
 			} else {
 				this.startPoint = this.points.shift();
-				this.map.set(this._getKeyFromPoint(this.startPoint), START_POINT);
+				this.map.set(this._getKeyFromPoint(this.startPoint), exports.START_POINT);
 			}
 
 			this.endPoint = this.points.shift();
-			this.map.set(this._getKeyFromPoint(this.endPoint), END_POINT);
+			this.map.set(this._getKeyFromPoint(this.endPoint), exports.END_POINT);
 
 			const closed = new Set();
 			let open = [];
@@ -118,7 +117,7 @@ class Astar {
 					point.x < this.maxX &&
 					point.y >= 0 &&
 					point.y < this.maxY &&
-					(!this.map.has(key) || (this.map.get(key) !== OBSTACLE && this.map.get(key) !== INACCESSIBLE))) {
+					(!this.map.has(key) || (this.map.get(key) !== exports.OBSTACLE && this.map.get(key) !== exports.INACCESSIBLE))) {
 
 					if (!closed.has(key)) {
 						const index = open.findIndex(n => n.key === key);
@@ -132,7 +131,7 @@ class Astar {
 							};
 							aux.f = this._f(aux);
 
-							if (this.map.has(key) && this.map.get(key) === RISKY) {
+							if (this.map.has(key) && this.map.get(key) === exports.RISKY) {
 								aux.h += this.risks.get(key);
 							}
 							open.push(aux);
@@ -164,11 +163,7 @@ class Astar {
 			const sol = [];
 
 			while (endPoitnFound && actual) {
-				sol.push(actual);
-				// DEBUG ONLY -> SAVE PATH ON MAP
-				if (!this.map.has(actual.key)) {
-					this.map.set(actual.key, PATH);
-				}
+				sol.push(this._getPointFromKey(actual.key));
 				actual = actual.parent;
 			}
 
@@ -183,75 +178,4 @@ class Astar {
 	getPaths() {
 		return this.paths;
 	}
-}
-
-const a = new Astar(10, 10, 1);
-
-a.addPoint(1, 0);
-a.addPoint(1, 9);
-
-a.setObstacle(3, 0);
-a.setObstacle(3, 1);
-a.setObstacle(3, 2);
-a.setObstacle(3, 3);
-a.setObstacle(3, 4);
-a.setObstacle(3, 5);
-a.setObstacle(3, 6);
-a.setObstacle(3, 7);
-a.setObstacle(3, 8);
-a.setObstacle(3, 9);
-
-a.setRiskyPoint(0, 5, 30);
-a.setRiskyPoint(1, 5, 100);
-a.setRiskyPoint(2, 5, 10);
-
-//a.setRiskyPoint(0, 5, 100);
-
-a.calculate();
-
-console.log(a.getPaths());
-
-
-// ### CONSOLE PRINT ###
-let line = ' |';
-let y;
-for (y = 0; y < a.getMaxY(); y++) {
-	line += ' ' + y + ' |';
-}
-console.log(line);
-for (let x = 0; x < a.getMaxX(); x++) {
-	line = x + '|';
-	for (y = 0; y < a.getMaxY(); y++) {
-		const point = a.getInPoint({x: x, y: y});
-		switch (point) {
-			case START_POINT:
-				line += ' I |';
-				break;
-
-			case END_POINT:
-				line += ' F |';
-				break;
-
-			case OBSTACLE:
-				line += ' # |';
-				break;
-
-			case INACCESSIBLE:
-				line += ' X |';
-				break;
-
-			case RISKY:
-				line += ' R |';
-				break;
-
-			case PATH:
-				line += ' . |';
-				break;
-
-			default:
-				line += '   |';
-				break;
-		}
-	}
-	console.log(line);
 }

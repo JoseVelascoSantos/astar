@@ -1,0 +1,22 @@
+{
+  "name": "astar_jpgc_javs",
+  "version": "1.0.0",
+  "description": "A star package for Ingenieria del Conocimiento",
+  "main": "Astar.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JoseVelascoSantos/astar.git"
+  },
+  "keywords": [
+    "Astar"
+  ],
+  "author": "JPGC and JAVS",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JoseVelascoSantos/astar/issues"
+  },
+  "homepage": "https://github.com/JoseVelascoSantos/astar#readme"
+}
