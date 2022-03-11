@@ -22,6 +22,8 @@ exports.Astar = class Astar {
 		this.paths = [];
 		this.points = [];
 		this.risks = new Map();
+		delete this.startPoint;
+		delete this.endPoint;
 	}
 
 	getMaxX() {

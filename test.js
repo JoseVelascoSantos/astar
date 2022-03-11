@@ -3,17 +3,18 @@ const {Astar} = require("./Astar");
 const a = new Astar(10, 10, 1);
 
 a.addPoint(0, 0);
-a.addPoint(1, 9);
-a.addPoint(9, 9);
-
-a.setObstacle(0, 1);
-a.setObstacle(1, 1);
-a.setObstacle(1, 0);
+a.addPoint(0, 9);
 
 //a.setRiskyPoint(0, 5, 100);
 
 a.calculate();
+console.log(a.getPaths());
+a.reset();
 
+
+a.addPoint(9, 9);
+a.addPoint(9, 0);
+a.calculate();
 console.log(a.getPaths());
 
 
@@ -29,23 +30,23 @@ for (let x = 0; x < a.getMaxX(); x++) {
     for (y = 0; y < a.getMaxY(); y++) {
         const point = a.getInPoint({x: x, y: y});
         switch (point) {
-            case Astar.START_POINT:
+            case 0:
                 line += ' I |';
                 break;
 
-            case Astar.END_POINT:
+            case 1:
                 line += ' F |';
                 break;
 
-            case Astar.OBSTACLE:
+            case 2:
                 line += ' # |';
                 break;
 
-            case Astar.INACCESSIBLE:
+            case 3:
                 line += ' X |';
                 break;
 
-            case Astar.RISKY:
+            case 4:
                 line += ' R |';
                 break;
 
