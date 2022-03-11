@@ -29,23 +29,23 @@ for (let x = 0; x < a.getMaxX(); x++) {
     for (y = 0; y < a.getMaxY(); y++) {
         const point = a.getInPoint({x: x, y: y});
         switch (point) {
-            case exports.START_POINT:
+            case Astar.START_POINT:
                 line += ' I |';
                 break;
 
-            case exports.END_POINT:
+            case Astar.END_POINT:
                 line += ' F |';
                 break;
 
-            case exports.OBSTACLE:
+            case Astar.OBSTACLE:
                 line += ' # |';
                 break;
 
-            case exports.INACCESSIBLE:
+            case Astar.INACCESSIBLE:
                 line += ' X |';
                 break;
 
-            case exports.RISKY:
+            case Astar.RISKY:
                 line += ' R |';
                 break;
 
