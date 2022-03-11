@@ -81,94 +81,96 @@ exports.Astar = class Astar {
 	}
 
 	calculate() {
-		do {
-			if (this.startPoint) {
-				this.map.delete(this._getKeyFromPoint(this.startPoint));
-				this.startPoint = this.endPoint;
-				this.map.set(this._getKeyFromPoint(this.startPoint), exports.START_POINT);
-			} else {
-				this.startPoint = this.points.shift();
-				this.map.set(this._getKeyFromPoint(this.startPoint), exports.START_POINT);
-			}
+		if (this.points.length > 0) {
+			do {
+				if (this.startPoint) {
+					this.map.delete(this._getKeyFromPoint(this.startPoint));
+					this.startPoint = this.endPoint;
+					this.map.set(this._getKeyFromPoint(this.startPoint), exports.START_POINT);
+				} else {
+					this.startPoint = this.points.shift();
+					this.map.set(this._getKeyFromPoint(this.startPoint), exports.START_POINT);
+				}
 
-			this.endPoint = this.points.shift();
-			this.map.set(this._getKeyFromPoint(this.endPoint), exports.END_POINT);
+				this.endPoint = this.points.shift();
+				this.map.set(this._getKeyFromPoint(this.endPoint), exports.END_POINT);
 
-			const closed = new Set();
-			let open = [];
+				const closed = new Set();
+				let open = [];
 
-			open.push({
-				key: this._getKeyFromPoint(this.startPoint),
-				g: 0,
-				h: this._g(this.startPoint),
-				parent: undefined
-			});
+				open.push({
+					key: this._getKeyFromPoint(this.startPoint),
+					g: 0,
+					h: this._g(this.startPoint),
+					parent: undefined
+				});
 
-			let endPoitnFound = false;
-			let openIsEmpty = false;
-			let actual;
-			const expand = (point, iX, iY) => {
-				point.x += iX;
-				point.y += iY;
-				const key = this._getKeyFromPoint(point);
-				const g = iX === 0 || iY === 0 ? 1 : Math.sqrt(Math.pow(this.distance, 2) + Math.pow(this.distance, 2));
+				let endPoitnFound = false;
+				let openIsEmpty = false;
+				let actual;
+				const expand = (point, iX, iY) => {
+					point.x += iX;
+					point.y += iY;
+					const key = this._getKeyFromPoint(point);
+					const g = iX === 0 || iY === 0 ? 1 : Math.sqrt(Math.pow(this.distance, 2) + Math.pow(this.distance, 2));
 
-				if (point.x >= 0 &&
-					point.x < this.maxX &&
-					point.y >= 0 &&
-					point.y < this.maxY &&
-					(!this.map.has(key) || (this.map.get(key) !== exports.OBSTACLE && this.map.get(key) !== exports.INACCESSIBLE))) {
+					if (point.x >= 0 &&
+						point.x < this.maxX &&
+						point.y >= 0 &&
+						point.y < this.maxY &&
+						(!this.map.has(key) || (this.map.get(key) !== exports.OBSTACLE && this.map.get(key) !== exports.INACCESSIBLE))) {
 
-					if (!closed.has(key)) {
-						const index = open.findIndex(n => n.key === key);
+						if (!closed.has(key)) {
+							const index = open.findIndex(n => n.key === key);
 
-						if (index === -1) {
-							const aux = {
-								key: key,
-								g: actual.g + g,
-								h: this._g(point),
-								parent: actual
-							};
-							aux.f = this._f(aux);
+							if (index === -1) {
+								const aux = {
+									key: key,
+									g: actual.g + g,
+									h: this._g(point),
+									parent: actual
+								};
+								aux.f = this._f(aux);
 
-							if (this.map.has(key) && this.map.get(key) === exports.RISKY) {
-								aux.h += this.risks.get(key);
+								if (this.map.has(key) && this.map.get(key) === exports.RISKY) {
+									aux.h += this.risks.get(key);
+								}
+								open.push(aux);
+							} else if (actual.g + g < open[index].g) {
+								open[index].g = actual.g + g;
+								open[index].parent = actual;
 							}
-							open.push(aux);
-						} else if (actual.g + g < open[index].g) {
-							open[index].g = actual.g + g;
-							open[index].parent = actual;
 						}
 					}
+				};
+
+				do {
+					if (open.length > 0) {
+						actual = open.shift();
+						closed.add(actual.key);
+						if (actual.key !== this._getKeyFromPoint(this.endPoint)) {
+							expand(this._getPointFromKey(actual.key), -1, -1);
+							expand(this._getPointFromKey(actual.key), -1, 0);
+							expand(this._getPointFromKey(actual.key), -1, 1);
+							expand(this._getPointFromKey(actual.key), 0, -1);
+							expand(this._getPointFromKey(actual.key), 0, 1);
+							expand(this._getPointFromKey(actual.key), 1, -1);
+							expand(this._getPointFromKey(actual.key), 1, 0);
+							expand(this._getPointFromKey(actual.key), 1, 1);
+						} else endPoitnFound = true;
+						open = open.sort((a, b) => this._f(a) - this._f(b));
+					} else openIsEmpty = true;
+				} while (!endPoitnFound && !openIsEmpty);
+				const sol = [];
+
+				while (endPoitnFound && actual) {
+					sol.push(this._getPointFromKey(actual.key));
+					actual = actual.parent;
 				}
-			};
 
-			do {
-				if (open.length > 0) {
-					actual = open.shift();
-					closed.add(actual.key);
-					if (actual.key !== this._getKeyFromPoint(this.endPoint)) {
-						expand(this._getPointFromKey(actual.key), -1, -1);
-						expand(this._getPointFromKey(actual.key), -1, 0);
-						expand(this._getPointFromKey(actual.key), -1, 1);
-						expand(this._getPointFromKey(actual.key), 0, -1);
-						expand(this._getPointFromKey(actual.key), 0, 1);
-						expand(this._getPointFromKey(actual.key), 1, -1);
-						expand(this._getPointFromKey(actual.key), 1, 0);
-						expand(this._getPointFromKey(actual.key), 1, 1);
-					} else endPoitnFound = true;
-					open = open.sort((a, b) => this._f(a) - this._f(b));
-				} else openIsEmpty = true;
-			} while (!endPoitnFound && !openIsEmpty);
-			const sol = [];
-
-			while (endPoitnFound && actual) {
-				sol.push(this._getPointFromKey(actual.key));
-				actual = actual.parent;
-			}
-
-			this.paths.push(sol);
-		} while(this.points.length > 0);
+				this.paths.push(sol);
+			} while (this.points.length > 0);
+		}
 	}
 
 	getInPoint(point) {

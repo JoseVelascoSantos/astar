@@ -1,6 +1,6 @@
 {
   "name": "astar_jpgc_javs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A star package for Ingenieria del Conocimiento",
   "main": "Astar.js",
   "scripts": {
